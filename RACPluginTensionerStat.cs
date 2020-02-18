@@ -22,17 +22,41 @@ using System.Xml;
 using System.Xml.Linq;
 
 
-namespace RACPluginTensionerStat
+namespace MissionPlanner.RACPluginTensionerStat
 {
-    public class Plugin : MissionPlanner.Plugin.Plugin
+
+
+    public class RacTensionerPlugin : MissionPlanner.Plugin.Plugin
     {
+
+
+        //url of tensioner interface (http://address/data.xml)
+        public string urlTensionerAddress { get; set; }
+        //Timeout in ms for waiting url
+        public int webTimeoutMs { get; set; }
+        //Enable/Disable safety disconnet
+        public bool bSafetyDisconnetEnable { get; set; }
+        //delay for Safety disconnect
+        public int safetyDisconnectDelay { get; set; }
+        //Force for initate safety disconnet
+        public int safetyDisconnectForce { get; set; }
+        //servo number for cable release
+        public int releaseServo { get; set; }
+        //servo position (in ms) for closed state
+        public int releaseServoClosed { get; set; }
+        //servo position (in ms) for open state
+        public int releaseServoOpen { get; set; }
+
+
+
 
         SplitContainer FDRightSide;
         Label lDebugInfo;
         Label lPullForce;
         float tension_value;
-        string urlTensionerAddress;
-        int webTimeoutMs;
+
+        //Settings
+
 
 
         public override string Name
@@ -97,17 +121,38 @@ namespace RACPluginTensionerStat
                 FDRightSide.Panel2.Controls.Add(lPullForce);
                 FDRightSide.Panel2.Controls.SetChildIndex(lPullForce, 1);
 
-
+                System.Windows.Forms.ToolStripMenuItem men = new System.Windows.Forms.ToolStripMenuItem() { Text = "Tensioner Settings" };
+                men.Click += settings_Click;
+                Host.FDMenuMap.Items.Add(men);
 
 
             }));
 
             //Check settings and save back (in case there are no initial values in config.xml
 
-            urlTensionerAddress = Settings.Instance["TensionerURL", "http://localhost/data.xml"];
-            Settings.Instance["TensionerURL"] = urlTensionerAddress;
-            webTimeoutMs = Settings.Instance.GetInt32("TensionerWebTimeout", 50);
-            Settings.Instance["TensionerWebTimeout"] = webTimeoutMs.ToString();
+            urlTensionerAddress = Host.config["TensionerURL", "http://localhost/data.xml"];
+            Host.config["TensionerURL"] = urlTensionerAddress;
+
+            webTimeoutMs = Host.config.GetInt32("TensionerWebTimeout", 50);
+            Host.config["TensionerWebTimeout"] = webTimeoutMs.ToString();
+
+            bSafetyDisconnetEnable = Host.config.GetBoolean("SafetyDisconnectEnable", true);
+            Host.config["SafetyDisconnectEnable"] = bSafetyDisconnetEnable.ToString();
+
+            safetyDisconnectDelay = Host.config.GetInt32("SafetyDisconnectDelay", 3000);
+            Host.config["SafetyDisconnectDelay"] = safetyDisconnectDelay.ToString();
+
+            safetyDisconnectForce = Host.config.GetInt32("SafetyDisconnectForce", 140);
+            Host.config["SafetyDisconnectForce"] = safetyDisconnectForce.ToString();
+
+            releaseServo = Host.config.GetInt32("ReleaseServoNo", 10);
+            Host.config["ReleaseServoNo"] = releaseServo.ToString();
+
+            releaseServoClosed = Host.config.GetInt32("ReleaseServoClosed", 1200);
+            Host.config["ReleaseServoClosed"] = releaseServoClosed.ToString();
+
+            releaseServoOpen = Host.config.GetInt32("ReleaseServoOpen", 1950);
+            Host.config["ReleaseServoOpen"] = releaseServoOpen.ToString();
 
             return true;
         }
@@ -207,6 +252,20 @@ namespace RACPluginTensionerStat
                 return null;
             }
         }
+
+
+        void settings_Click(object sender, EventArgs e)
+        {
+
+            using (Form settings = new MissionPlanner.RACPluginTensionerStat.Settings(this))
+            {
+                MissionPlanner.Utilities.ThemeManager.ApplyThemeTo(settings);
+                settings.ShowDialog();
+            }
+
+
+        }
+
     }
 }
 
