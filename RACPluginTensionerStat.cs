@@ -43,19 +43,22 @@ namespace MissionPlanner.RACPluginTensionerStat
         //servo number for cable release
         public int releaseServo { get; set; }
         //servo position (in ms) for closed state
-        public int releaseServoClosed { get; set; }
+        public int releaseServoClose { get; set; }
         //servo position (in ms) for open state
         public int releaseServoOpen { get; set; }
-
+        //Enable debug info label
+        public bool bDebugEnabled { get; set; }
 
 
 
         SplitContainer FDRightSide;
         Label lDebugInfo;
         Label lPullForce;
+        MissionPlanner.Controls.MyButton ahd_q;
+
         float tension_value;
 
-        //Settings
+        private Stopwatch stopwatch;
 
 
 
@@ -66,7 +69,7 @@ namespace MissionPlanner.RACPluginTensionerStat
 
         public override string Version
         {
-            get { return "0.2"; }
+            get { return "0.3"; }
         }
 
         public override string Author
@@ -98,7 +101,7 @@ namespace MissionPlanner.RACPluginTensionerStat
                 l.Visible = false;
 
                 //Create a new label to display debug info (this is not the label which display ground and air tension forces, it is used only for debug purposes)
-                // TODO: Make debug label switchable via menu/gui
+
                 lDebugInfo = new System.Windows.Forms.Label();
                 lDebugInfo.Name = "lDebugInfo";
                 //This is a good approximate position beside the wind direction and below the distance bar
@@ -125,6 +128,14 @@ namespace MissionPlanner.RACPluginTensionerStat
                 men.Click += settings_Click;
                 Host.FDMenuMap.Items.Add(men);
 
+                ahd_q = new MissionPlanner.Controls.MyButton();
+                ahd_q.Location = new System.Drawing.Point(200,200);
+                ahd_q.Name = "ahd1";
+                ahd_q.Text = "QUAD";
+                ahd_q.Anchor = (AnchorStyles.Top | AnchorStyles.Right);
+                FDRightSide.Panel2.Controls.Add(ahd_q);
+                FDRightSide.Panel2.Controls.SetChildIndex(ahd_q, 1);
+                ahd_q.Click += new EventHandler(this.btn_Click);
 
             }));
 
@@ -148,11 +159,14 @@ namespace MissionPlanner.RACPluginTensionerStat
             releaseServo = Host.config.GetInt32("ReleaseServoNo", 10);
             Host.config["ReleaseServoNo"] = releaseServo.ToString();
 
-            releaseServoClosed = Host.config.GetInt32("ReleaseServoClosed", 1200);
-            Host.config["ReleaseServoClosed"] = releaseServoClosed.ToString();
+            releaseServoClose = Host.config.GetInt32("ReleaseServoClosed", 1200);
+            Host.config["ReleaseServoClosed"] = releaseServoClose.ToString();
 
             releaseServoOpen = Host.config.GetInt32("ReleaseServoOpen", 1950);
             Host.config["ReleaseServoOpen"] = releaseServoOpen.ToString();
+
+            bDebugEnabled = Host.config.GetBoolean("TensionerDebug", false);
+            Host.config["TensionerDebug"] = bDebugEnabled.ToString();
 
             return true;
         }
@@ -162,6 +176,9 @@ namespace MissionPlanner.RACPluginTensionerStat
         {
             //Catch all incoming Mavlink packets.
             Host.comPort.OnPacketReceived += MavOnOnPacketReceivedHandler;
+            //Init stopwatch
+            stopwatch = new Stopwatch();
+
             return true;
         }
 
@@ -197,17 +214,29 @@ namespace MissionPlanner.RACPluginTensionerStat
             //Must use BeginIvoke to avoid deadlock with OnClose in main form.
             MainV2.instance.BeginInvoke((MethodInvoker)(() =>
             {
-                lDebugInfo.Text = sTensionerInfo;
-                lPullForce.Text = String.Format("{0:000}", tension_value);
-            //TODO: Coloring Green/Ywllow/RED
+                lDebugInfo.Visible = bDebugEnabled;
+                if (bDebugEnabled) lDebugInfo.Text = sTensionerInfo;
 
-                if (tension_value > 70) {
-                    lPullForce.ForeColor = Color.Red;
-                } else
-                {
-                    lPullForce.ForeColor = Color.Green;
-                }
+                lPullForce.Text = String.Format("{0:000}", tension_value);
+
+                //TODO: Coloring Green/Ywllow/RED
+                if (tension_value > 70) lPullForce.ForeColor = Color.Red;
+                else lPullForce.ForeColor = Color.Green;
+
             }));
+
+            //Check for tension level and initiate release
+
+            if (tension_value >= safetyDisconnectForce)
+            {
+                if (stopwatch.IsRunning)
+                {
+                    if (stopwatch.ElapsedMilliseconds >= safetyDisconnectDelay)
+                        DoOpenReleaseServo();
+                }
+                else stopwatch.Restart();
+            }
+            else stopwatch.Stop();
             return true;
         }
 
@@ -216,13 +245,28 @@ namespace MissionPlanner.RACPluginTensionerStat
             return true;
         }
 
+        //Release the cable
+        private void DoOpenReleaseServo()
+        {
+            //To make it sure, send at least three times
+            _ = MainV2.comPort.doCommand((byte)MainV2.comPort.sysidcurrent, (byte)MainV2.comPort.compidcurrent, MAVLink.MAV_CMD.DO_SET_SERVO, releaseServo, releaseServoOpen, 0, 0, 0, 0, 0);
+            _ = MainV2.comPort.doCommand((byte)MainV2.comPort.sysidcurrent, (byte)MainV2.comPort.compidcurrent, MAVLink.MAV_CMD.DO_SET_SERVO, releaseServo, releaseServoOpen, 0, 0, 0, 0, 0);
+            _ = MainV2.comPort.doCommand((byte)MainV2.comPort.sysidcurrent, (byte)MainV2.comPort.compidcurrent, MAVLink.MAV_CMD.DO_SET_SERVO, releaseServo, releaseServoOpen, 0, 0, 0, 0, 0);
+        }
+
+        private void DoCloseReleaseServo()
+        {
+            //To make it sure, send at least three times
+            _ = MainV2.comPort.doCommand((byte)MainV2.comPort.sysidcurrent, (byte)MainV2.comPort.compidcurrent, MAVLink.MAV_CMD.DO_SET_SERVO, releaseServo, releaseServoClose, 0, 0, 0, 0, 0);
+            _ = MainV2.comPort.doCommand((byte)MainV2.comPort.sysidcurrent, (byte)MainV2.comPort.compidcurrent, MAVLink.MAV_CMD.DO_SET_SERVO, releaseServo, releaseServoClose, 0, 0, 0, 0, 0);
+            _ = MainV2.comPort.doCommand((byte)MainV2.comPort.sysidcurrent, (byte)MainV2.comPort.compidcurrent, MAVLink.MAV_CMD.DO_SET_SERVO, releaseServo, releaseServoClose, 0, 0, 0, 0, 0);
+        }
+
 
         private void MavOnOnPacketReceivedHandler(object o, MAVLink.MAVLinkMessage linkMessage)
         {
 
             //Pull force at the drone is coming down as a Mavlink DEBUG message
-            //TODO: Add checking for  status.ind since we can send more than one type of DEBUG message in the future.
-
             if ((MAVLink.MAVLINK_MSG_ID)linkMessage.msgid == MAVLink.MAVLINK_MSG_ID.DEBUG)
             {
                 var status = linkMessage.ToStructure<MAVLink.mavlink_debug_t>();
@@ -266,6 +310,11 @@ namespace MissionPlanner.RACPluginTensionerStat
 
         }
 
+        void btn_Click(Object sender, EventArgs e)
+        {
+            tension_value = 75;
+        }
+
+        }
     }
-}
 

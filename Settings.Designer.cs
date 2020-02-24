@@ -47,6 +47,8 @@
             this.nServoOpen = new System.Windows.Forms.NumericUpDown();
             this.nServoClose = new System.Windows.Forms.NumericUpDown();
             this.tbURL = new System.Windows.Forms.TextBox();
+            this.label12 = new System.Windows.Forms.Label();
+            this.cbDebugEnabled = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.nTimeout)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.nSafetyDelay)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.nSafetyForce)).BeginInit();
@@ -286,11 +288,31 @@
             this.tbURL.TabIndex = 1;
             this.tbURL.Text = "http://192.168.0.100/data.xml";
             // 
+            // label12
+            // 
+            this.label12.AutoSize = true;
+            this.label12.Location = new System.Drawing.Point(12, 373);
+            this.label12.Name = "label12";
+            this.label12.Size = new System.Drawing.Size(113, 17);
+            this.label12.TabIndex = 20;
+            this.label12.Text = "Enable DEBUG :";
+            // 
+            // cbDebugEnabled
+            // 
+            this.cbDebugEnabled.AutoSize = true;
+            this.cbDebugEnabled.Location = new System.Drawing.Point(192, 373);
+            this.cbDebugEnabled.Name = "cbDebugEnabled";
+            this.cbDebugEnabled.Size = new System.Drawing.Size(18, 17);
+            this.cbDebugEnabled.TabIndex = 21;
+            this.cbDebugEnabled.UseVisualStyleBackColor = true;
+            // 
             // Settings
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(513, 396);
+            this.ClientSize = new System.Drawing.Size(513, 414);
+            this.Controls.Add(this.cbDebugEnabled);
+            this.Controls.Add(this.label12);
             this.Controls.Add(this.tbURL);
             this.Controls.Add(this.nServoClose);
             this.Controls.Add(this.nServoOpen);
@@ -346,5 +368,7 @@
         private System.Windows.Forms.NumericUpDown nServoOpen;
         private System.Windows.Forms.NumericUpDown nServoClose;
         private System.Windows.Forms.TextBox tbURL;
+        private System.Windows.Forms.Label label12;
+        private System.Windows.Forms.CheckBox cbDebugEnabled;
     }
 }

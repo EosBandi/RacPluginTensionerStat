@@ -33,8 +33,9 @@ namespace MissionPlanner.RACPluginTensionerStat
             nSafetyForce.Value = plugin.safetyDisconnectForce;
 
             cbSevoNumber.Text = plugin.releaseServo.ToString();
-            nServoClose.Value = plugin.releaseServoClosed;
+            nServoClose.Value = plugin.releaseServoClose;
             nServoOpen.Value = plugin.releaseServoOpen;
+            cbDebugEnabled.Checked = plugin.bDebugEnabled;
         }
 
         private void Settings_FormClosing(object sender, FormClosingEventArgs e)
@@ -47,8 +48,9 @@ namespace MissionPlanner.RACPluginTensionerStat
             plugin.safetyDisconnectForce = (int)nSafetyForce.Value;
 
             plugin.releaseServo = System.Convert.ToInt32(cbSevoNumber.Text);
-            plugin.releaseServoClosed = (int)nServoClose.Value;
+            plugin.releaseServoClose = (int)nServoClose.Value;
             plugin.releaseServoOpen = (int)nServoOpen.Value;
+            plugin.bDebugEnabled = cbDebugEnabled.Checked;
 
             plugin.Host.config["TensionerURL"] = plugin.urlTensionerAddress;
             plugin.Host.config["TensionerWebTimeout"] = plugin.webTimeoutMs.ToString();
@@ -56,8 +58,9 @@ namespace MissionPlanner.RACPluginTensionerStat
             plugin.Host.config["SafetyDisconnectDelay"] = plugin.safetyDisconnectDelay.ToString();
             plugin.Host.config["SafetyDisconnectForce"] = plugin.safetyDisconnectForce.ToString();
             plugin.Host.config["ReleaseServoNo"] = plugin.releaseServo.ToString();
-            plugin.Host.config["ReleaseServoClosed"] = plugin.releaseServoClosed.ToString();
+            plugin.Host.config["ReleaseServoClosed"] = plugin.releaseServoClose.ToString();
             plugin.Host.config["ReleaseServoOpen"] = plugin.releaseServoOpen.ToString();
+            plugin.Host.config["TensionerDebug"] = plugin.bDebugEnabled.ToString();
 
         }
     }
