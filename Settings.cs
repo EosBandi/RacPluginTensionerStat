@@ -35,6 +35,10 @@ namespace MissionPlanner.RACPluginTensionerStat
             cbSevoNumber.Text = plugin.releaseServo.ToString();
             nServoClose.Value = plugin.releaseServoClose;
             nServoOpen.Value = plugin.releaseServoOpen;
+
+            nYellowLimit.Value = plugin.yellowLimit;
+            nRedLimit.Value = plugin.redLimit;
+            
             cbDebugEnabled.Checked = plugin.bDebugEnabled;
         }
 
@@ -50,16 +54,22 @@ namespace MissionPlanner.RACPluginTensionerStat
             plugin.releaseServo = System.Convert.ToInt32(cbSevoNumber.Text);
             plugin.releaseServoClose = (int)nServoClose.Value;
             plugin.releaseServoOpen = (int)nServoOpen.Value;
+            plugin.yellowLimit = (int)nYellowLimit.Value;
+            plugin.redLimit = (int)nRedLimit.Value;
+
+
             plugin.bDebugEnabled = cbDebugEnabled.Checked;
 
             plugin.Host.config["TensionerURL"] = plugin.urlTensionerAddress;
             plugin.Host.config["TensionerWebTimeout"] = plugin.webTimeoutMs.ToString();
-            plugin.Host.config["SafetyDisconnectEnable"] = plugin.bSafetyDisconnetEnable.ToString();
-            plugin.Host.config["SafetyDisconnectDelay"] = plugin.safetyDisconnectDelay.ToString();
-            plugin.Host.config["SafetyDisconnectForce"] = plugin.safetyDisconnectForce.ToString();
-            plugin.Host.config["ReleaseServoNo"] = plugin.releaseServo.ToString();
-            plugin.Host.config["ReleaseServoClosed"] = plugin.releaseServoClose.ToString();
-            plugin.Host.config["ReleaseServoOpen"] = plugin.releaseServoOpen.ToString();
+            plugin.Host.config["TensionerSafetyDisconnectEnable"] = plugin.bSafetyDisconnetEnable.ToString();
+            plugin.Host.config["TensionerSafetyDisconnectDelay"] = plugin.safetyDisconnectDelay.ToString();
+            plugin.Host.config["TensionerSafetyDisconnectForce"] = plugin.safetyDisconnectForce.ToString();
+            plugin.Host.config["TensionerReleaseServoNo"] = plugin.releaseServo.ToString();
+            plugin.Host.config["TensionerReleaseServoClosed"] = plugin.releaseServoClose.ToString();
+            plugin.Host.config["TensionerReleaseServoOpen"] = plugin.releaseServoOpen.ToString();
+            plugin.Host.config["TensionerYellowWarningLimit"] = plugin.yellowLimit.ToString();
+            plugin.Host.config["TensionerRedWarningLimit"] = plugin.redLimit.ToString();
             plugin.Host.config["TensionerDebug"] = plugin.bDebugEnabled.ToString();
 
         }

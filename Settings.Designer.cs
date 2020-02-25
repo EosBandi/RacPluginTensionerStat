@@ -49,11 +49,18 @@
             this.tbURL = new System.Windows.Forms.TextBox();
             this.label12 = new System.Windows.Forms.Label();
             this.cbDebugEnabled = new System.Windows.Forms.CheckBox();
+            this.nYellowLimit = new System.Windows.Forms.NumericUpDown();
+            this.nRedLimit = new System.Windows.Forms.NumericUpDown();
+            this.label13 = new System.Windows.Forms.Label();
+            this.label14 = new System.Windows.Forms.Label();
+            this.label15 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.nTimeout)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.nSafetyDelay)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.nSafetyForce)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.nServoOpen)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.nServoClose)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nYellowLimit)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nRedLimit)).BeginInit();
             this.SuspendLayout();
             // 
             // label1
@@ -291,7 +298,7 @@
             // label12
             // 
             this.label12.AutoSize = true;
-            this.label12.Location = new System.Drawing.Point(12, 373);
+            this.label12.Location = new System.Drawing.Point(12, 403);
             this.label12.Name = "label12";
             this.label12.Size = new System.Drawing.Size(113, 17);
             this.label12.TabIndex = 20;
@@ -300,17 +307,83 @@
             // cbDebugEnabled
             // 
             this.cbDebugEnabled.AutoSize = true;
-            this.cbDebugEnabled.Location = new System.Drawing.Point(192, 373);
+            this.cbDebugEnabled.Location = new System.Drawing.Point(192, 403);
             this.cbDebugEnabled.Name = "cbDebugEnabled";
             this.cbDebugEnabled.Size = new System.Drawing.Size(18, 17);
             this.cbDebugEnabled.TabIndex = 21;
             this.cbDebugEnabled.UseVisualStyleBackColor = true;
             // 
+            // nYellowLimit
+            // 
+            this.nYellowLimit.Location = new System.Drawing.Point(193, 371);
+            this.nYellowLimit.Maximum = new decimal(new int[] {
+            200,
+            0,
+            0,
+            0});
+            this.nYellowLimit.Name = "nYellowLimit";
+            this.nYellowLimit.Size = new System.Drawing.Size(61, 22);
+            this.nYellowLimit.TabIndex = 23;
+            this.nYellowLimit.Value = new decimal(new int[] {
+            10,
+            0,
+            0,
+            0});
+            // 
+            // nRedLimit
+            // 
+            this.nRedLimit.Location = new System.Drawing.Point(319, 371);
+            this.nRedLimit.Maximum = new decimal(new int[] {
+            200,
+            0,
+            0,
+            0});
+            this.nRedLimit.Name = "nRedLimit";
+            this.nRedLimit.Size = new System.Drawing.Size(61, 22);
+            this.nRedLimit.TabIndex = 24;
+            this.nRedLimit.Value = new decimal(new int[] {
+            10,
+            0,
+            0,
+            0});
+            // 
+            // label13
+            // 
+            this.label13.AutoSize = true;
+            this.label13.Location = new System.Drawing.Point(12, 371);
+            this.label13.Name = "label13";
+            this.label13.Size = new System.Drawing.Size(109, 17);
+            this.label13.TabIndex = 25;
+            this.label13.Text = "Warning Limits :";
+            // 
+            // label14
+            // 
+            this.label14.AutoSize = true;
+            this.label14.Location = new System.Drawing.Point(121, 373);
+            this.label14.Name = "label14";
+            this.label14.Size = new System.Drawing.Size(66, 17);
+            this.label14.TabIndex = 26;
+            this.label14.Text = "YELLOW";
+            // 
+            // label15
+            // 
+            this.label15.AutoSize = true;
+            this.label15.Location = new System.Drawing.Point(276, 373);
+            this.label15.Name = "label15";
+            this.label15.Size = new System.Drawing.Size(37, 17);
+            this.label15.TabIndex = 27;
+            this.label15.Text = "RED";
+            // 
             // Settings
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(513, 414);
+            this.ClientSize = new System.Drawing.Size(513, 438);
+            this.Controls.Add(this.label15);
+            this.Controls.Add(this.label14);
+            this.Controls.Add(this.label13);
+            this.Controls.Add(this.nRedLimit);
+            this.Controls.Add(this.nYellowLimit);
             this.Controls.Add(this.cbDebugEnabled);
             this.Controls.Add(this.label12);
             this.Controls.Add(this.tbURL);
@@ -342,6 +415,8 @@
             ((System.ComponentModel.ISupportInitialize)(this.nSafetyForce)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.nServoOpen)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.nServoClose)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nYellowLimit)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nRedLimit)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -370,5 +445,10 @@
         private System.Windows.Forms.TextBox tbURL;
         private System.Windows.Forms.Label label12;
         private System.Windows.Forms.CheckBox cbDebugEnabled;
+        private System.Windows.Forms.NumericUpDown nYellowLimit;
+        private System.Windows.Forms.NumericUpDown nRedLimit;
+        private System.Windows.Forms.Label label13;
+        private System.Windows.Forms.Label label14;
+        private System.Windows.Forms.Label label15;
     }
 }

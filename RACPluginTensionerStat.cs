@@ -20,6 +20,8 @@ using System.Net;
 using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Linq;
+using log4net;
+using MissionPlanner.Log;
 
 
 namespace MissionPlanner.RACPluginTensionerStat
@@ -48,8 +50,14 @@ namespace MissionPlanner.RACPluginTensionerStat
         public int releaseServoOpen { get; set; }
         //Enable debug info label
         public bool bDebugEnabled { get; set; }
+        //Yellow warning limit
+        public int yellowLimit { get; set; }
+        //Red warning limit
+        public int redLimit { get; set; }
 
 
+        private static readonly ILog log =
+            LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
         SplitContainer FDRightSide;
         Label lDebugInfo;
@@ -147,26 +155,32 @@ namespace MissionPlanner.RACPluginTensionerStat
             webTimeoutMs = Host.config.GetInt32("TensionerWebTimeout", 50);
             Host.config["TensionerWebTimeout"] = webTimeoutMs.ToString();
 
-            bSafetyDisconnetEnable = Host.config.GetBoolean("SafetyDisconnectEnable", true);
-            Host.config["SafetyDisconnectEnable"] = bSafetyDisconnetEnable.ToString();
+            bSafetyDisconnetEnable = Host.config.GetBoolean("TensionerSafetyDisconnectEnable", true);
+            Host.config["TensionerSafetyDisconnectEnable"] = bSafetyDisconnetEnable.ToString();
 
-            safetyDisconnectDelay = Host.config.GetInt32("SafetyDisconnectDelay", 3000);
-            Host.config["SafetyDisconnectDelay"] = safetyDisconnectDelay.ToString();
+            safetyDisconnectDelay = Host.config.GetInt32("TensionerSafetyDisconnectDelay", 3000);
+            Host.config["TensionerSafetyDisconnectDelay"] = safetyDisconnectDelay.ToString();
 
-            safetyDisconnectForce = Host.config.GetInt32("SafetyDisconnectForce", 140);
-            Host.config["SafetyDisconnectForce"] = safetyDisconnectForce.ToString();
+            safetyDisconnectForce = Host.config.GetInt32("TensionerSafetyDisconnectForce", 140);
+            Host.config["TensionerSafetyDisconnectForce"] = safetyDisconnectForce.ToString();
 
-            releaseServo = Host.config.GetInt32("ReleaseServoNo", 10);
-            Host.config["ReleaseServoNo"] = releaseServo.ToString();
+            releaseServo = Host.config.GetInt32("TensionerReleaseServoNo", 10);
+            Host.config["TensionerReleaseServoNo"] = releaseServo.ToString();
 
-            releaseServoClose = Host.config.GetInt32("ReleaseServoClosed", 1200);
-            Host.config["ReleaseServoClosed"] = releaseServoClose.ToString();
+            releaseServoClose = Host.config.GetInt32("TensionerReleaseServoClosed", 1200);
+            Host.config["TensionerReleaseServoClosed"] = releaseServoClose.ToString();
 
-            releaseServoOpen = Host.config.GetInt32("ReleaseServoOpen", 1950);
-            Host.config["ReleaseServoOpen"] = releaseServoOpen.ToString();
+            releaseServoOpen = Host.config.GetInt32("TensionerReleaseServoOpen", 1950);
+            Host.config["TensionerReleaseServoOpen"] = releaseServoOpen.ToString();
 
-            bDebugEnabled = Host.config.GetBoolean("TensionerDebug", false);
-            Host.config["TensionerDebug"] = bDebugEnabled.ToString();
+            yellowLimit = Host.config.GetInt32("TensionerYellowWarningLimit", 50);
+            Host.config["TensionerYellowWarningLimit"] = yellowLimit.ToString();
+
+            redLimit = Host.config.GetInt32("TensionerRedWarningLimit", 60);
+            Host.config["TensionerRedWarningLimit"] = redLimit.ToString();
+
+            bDebugEnabled = Host.config.GetBoolean("TensionerTensionerDebug", false);
+            Host.config["TensionerTensionerDebug"] = bDebugEnabled.ToString();
 
             return true;
         }
@@ -219,20 +233,22 @@ namespace MissionPlanner.RACPluginTensionerStat
 
                 lPullForce.Text = String.Format("{0:000}", tension_value);
 
-                //TODO: Coloring Green/Ywllow/RED
-                if (tension_value > 70) lPullForce.ForeColor = Color.Red;
-                else lPullForce.ForeColor = Color.Green;
+                if (tension_value > redLimit) lPullForce.ForeColor = Color.Red;
+                    else if (tension_value > yellowLimit) lPullForce.ForeColor = Color.Yellow;
+                            else lPullForce.ForeColor = Color.Green;
 
             }));
 
             //Check for tension level and initiate release
-
             if (tension_value >= safetyDisconnectForce)
             {
                 if (stopwatch.IsRunning)
                 {
                     if (stopwatch.ElapsedMilliseconds >= safetyDisconnectDelay)
+                    {
                         DoOpenReleaseServo();
+                        stopwatch.Restart();
+                    }
                 }
                 else stopwatch.Restart();
             }
@@ -248,17 +264,30 @@ namespace MissionPlanner.RACPluginTensionerStat
         //Release the cable
         private void DoOpenReleaseServo()
         {
-            //To make it sure, send at least three times
-            _ = MainV2.comPort.doCommand((byte)MainV2.comPort.sysidcurrent, (byte)MainV2.comPort.compidcurrent, MAVLink.MAV_CMD.DO_SET_SERVO, releaseServo, releaseServoOpen, 0, 0, 0, 0, 0);
-            _ = MainV2.comPort.doCommand((byte)MainV2.comPort.sysidcurrent, (byte)MainV2.comPort.compidcurrent, MAVLink.MAV_CMD.DO_SET_SERVO, releaseServo, releaseServoOpen, 0, 0, 0, 0, 0);
-            _ = MainV2.comPort.doCommand((byte)MainV2.comPort.sysidcurrent, (byte)MainV2.comPort.compidcurrent, MAVLink.MAV_CMD.DO_SET_SERVO, releaseServo, releaseServoOpen, 0, 0, 0, 0, 0);
+
+            log.Info("Release servo open called");
+            //If not connected, do nothing
+            if (!Host.cs.connected) return;
+
+            Host.cs.messageHigh = "Cable Emergency Release!";
+            Host.cs.messageHighTime = DateTime.Now;
+
+            try
+            {
+                if (!MainV2.comPort.doCommand((byte)MainV2.comPort.sysidcurrent, (byte)MainV2.comPort.compidcurrent, MAVLink.MAV_CMD.DO_SET_SERVO, releaseServo, releaseServoOpen, 0, 0, 0, 0, 0))
+                {
+                    Host.cs.messageHigh = "Cable release servo not responding!";
+                    Host.cs.messageHighTime = DateTime.Now;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
         }
 
         private void DoCloseReleaseServo()
         {
-            //To make it sure, send at least three times
-            _ = MainV2.comPort.doCommand((byte)MainV2.comPort.sysidcurrent, (byte)MainV2.comPort.compidcurrent, MAVLink.MAV_CMD.DO_SET_SERVO, releaseServo, releaseServoClose, 0, 0, 0, 0, 0);
-            _ = MainV2.comPort.doCommand((byte)MainV2.comPort.sysidcurrent, (byte)MainV2.comPort.compidcurrent, MAVLink.MAV_CMD.DO_SET_SERVO, releaseServo, releaseServoClose, 0, 0, 0, 0, 0);
             _ = MainV2.comPort.doCommand((byte)MainV2.comPort.sysidcurrent, (byte)MainV2.comPort.compidcurrent, MAVLink.MAV_CMD.DO_SET_SERVO, releaseServo, releaseServoClose, 0, 0, 0, 0, 0);
         }
 
@@ -312,7 +341,7 @@ namespace MissionPlanner.RACPluginTensionerStat
 
         void btn_Click(Object sender, EventArgs e)
         {
-            tension_value = 75;
+            tension_value = 55;
         }
 
         }
