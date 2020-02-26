@@ -54,21 +54,24 @@ namespace MissionPlanner.RACPluginTensionerStat
         public int yellowLimit { get; set; }
         //Red warning limit
         public int redLimit { get; set; }
-
+        //Minimum altitude for tensioner activation
+        public int altLimit {get; set;}
 
         private static readonly ILog log =
             LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
+
+        private bool _HookStatus;  //0-Closed, 1-Open
+
         SplitContainer FDRightSide;
         Label lDebugInfo;
         Label lPullForce;
-        MissionPlanner.Controls.MyButton ahd_q;
+        MissionPlanner.Controls.MyButton btnReleaseServoOpen;
+        MissionPlanner.Controls.MyButton btnReleaseServoClose;
 
         float tension_value;
 
         private Stopwatch stopwatch;
-
-
 
         public override string Name
         {
@@ -113,7 +116,7 @@ namespace MissionPlanner.RACPluginTensionerStat
                 lDebugInfo = new System.Windows.Forms.Label();
                 lDebugInfo.Name = "lDebugInfo";
                 //This is a good approximate position beside the wind direction and below the distance bar
-                lDebugInfo.Location = new System.Drawing.Point(66, 50);
+                lDebugInfo.Location = new System.Drawing.Point(66, 45);
                 lDebugInfo.Text = "TensionerDebugInfo";
                 lDebugInfo.AutoSize = true;
 
@@ -123,7 +126,7 @@ namespace MissionPlanner.RACPluginTensionerStat
 
                 lPullForce = new Label();
                 lPullForce.Name = "lbl_PullForce";
-                lPullForce.Location = new System.Drawing.Point(0, FDRightSide.Panel2.Height-140);
+                lPullForce.Location = new System.Drawing.Point(0, FDRightSide.Panel2.Height-160);
                 lPullForce.Text = "000";
                 lPullForce.AutoSize = true;
                 lPullForce.Font = new Font("Tahoma", 45, FontStyle.Bold);
@@ -136,19 +139,28 @@ namespace MissionPlanner.RACPluginTensionerStat
                 men.Click += settings_Click;
                 Host.FDMenuMap.Items.Add(men);
 
-                ahd_q = new MissionPlanner.Controls.MyButton();
-                ahd_q.Location = new System.Drawing.Point(200,200);
-                ahd_q.Name = "ahd1";
-                ahd_q.Text = "QUAD";
-                ahd_q.Anchor = (AnchorStyles.Top | AnchorStyles.Right);
-                FDRightSide.Panel2.Controls.Add(ahd_q);
-                FDRightSide.Panel2.Controls.SetChildIndex(ahd_q, 1);
-                ahd_q.Click += new EventHandler(this.btn_Click);
+                btnReleaseServoOpen = new MissionPlanner.Controls.MyButton();
+                btnReleaseServoOpen.Location = new System.Drawing.Point(0, FDRightSide.Panel2.Height - 185);
+                btnReleaseServoOpen.Name = "btnReleaseServoOpen";
+                btnReleaseServoOpen.Text = "Cable release";
+                btnReleaseServoOpen.Anchor = (AnchorStyles.Bottom | AnchorStyles.Left);
+                FDRightSide.Panel2.Controls.Add(btnReleaseServoOpen);
+                FDRightSide.Panel2.Controls.SetChildIndex(btnReleaseServoOpen, 2);
+                btnReleaseServoOpen.Click += new EventHandler(this.btnReleaseServoOpen_Click);
+
+
+                btnReleaseServoClose = new MissionPlanner.Controls.MyButton();
+                btnReleaseServoClose.Location = new System.Drawing.Point(0, FDRightSide.Panel2.Height - 75);
+                btnReleaseServoClose.Name = "btnReleaseServoClose";
+                btnReleaseServoClose.Text = "Close hook";
+                btnReleaseServoClose.Anchor = (AnchorStyles.Bottom | AnchorStyles.Left);
+                FDRightSide.Panel2.Controls.Add(btnReleaseServoClose);
+                FDRightSide.Panel2.Controls.SetChildIndex(btnReleaseServoClose, 2);
+                btnReleaseServoClose.Click += new EventHandler(this.btnReleaseServoClose_Click);
 
             }));
 
             //Check settings and save back (in case there are no initial values in config.xml
-
             urlTensionerAddress = Host.config["TensionerURL", "http://localhost/data.xml"];
             Host.config["TensionerURL"] = urlTensionerAddress;
 
@@ -179,6 +191,9 @@ namespace MissionPlanner.RACPluginTensionerStat
             redLimit = Host.config.GetInt32("TensionerRedWarningLimit", 60);
             Host.config["TensionerRedWarningLimit"] = redLimit.ToString();
 
+            altLimit = Host.config.GetInt32("TensionerAltitudeLimit", 15);
+            Host.config["TensionerAltitudeLimit"] = altLimit.ToString();
+
             bDebugEnabled = Host.config.GetBoolean("TensionerTensionerDebug", false);
             Host.config["TensionerTensionerDebug"] = bDebugEnabled.ToString();
 
@@ -192,6 +207,7 @@ namespace MissionPlanner.RACPluginTensionerStat
             Host.comPort.OnPacketReceived += MavOnOnPacketReceivedHandler;
             //Init stopwatch
             stopwatch = new Stopwatch();
+            _HookStatus = false;            //Assume hook is closed
 
             return true;
         }
@@ -199,16 +215,16 @@ namespace MissionPlanner.RACPluginTensionerStat
         public override bool Loop()
         {
 
-            //TODO: Fix up dronestatus bit 0 = cable released (1-yes, 0-no)
-            //                         bit 1 = Initial height reached (height is settable) (1-yes, 0-no)
+            //dronestatus bit 0 = cable released (1-yes, 0-no)
+            //            bit 1 = Initial height reached (height is settable) (1-yes, 0-no)
 
-            //This is all temporary, need to clean it up
-            string dronestatus = "0";
-            if (Host.cs.alt > 10) dronestatus = "2";
+            int dronestatus = 0;
+            if (_HookStatus) dronestatus = 1;
+            if (Host.cs.alt > altLimit) dronestatus = dronestatus + 2;
 
             string sTensionerInfo;
             sTensionerInfo = String.Format("At Drone:{0}N", tension_value.ToString("0.0"));
-            string urlReq = String.Format("{0}?dronefoce={1}&dronestatus={2}", urlTensionerAddress, tension_value.ToString("0"), dronestatus);
+            string urlReq = String.Format("{0}?dronefoce={1}&dronestatus={2}", urlTensionerAddress, tension_value.ToString("0"), dronestatus.ToString());
 
             string retval = GetWinch(urlReq);
 
@@ -279,6 +295,10 @@ namespace MissionPlanner.RACPluginTensionerStat
                     Host.cs.messageHigh = "Cable release servo not responding!";
                     Host.cs.messageHighTime = DateTime.Now;
                 }
+                else
+                {
+                    _HookStatus = true; //Hook released
+                }
             }
             catch (Exception ex)
             {
@@ -289,6 +309,7 @@ namespace MissionPlanner.RACPluginTensionerStat
         private void DoCloseReleaseServo()
         {
             _ = MainV2.comPort.doCommand((byte)MainV2.comPort.sysidcurrent, (byte)MainV2.comPort.compidcurrent, MAVLink.MAV_CMD.DO_SET_SERVO, releaseServo, releaseServoClose, 0, 0, 0, 0, 0);
+            _HookStatus = false; //Hook is closed
         }
 
 
@@ -303,8 +324,6 @@ namespace MissionPlanner.RACPluginTensionerStat
             }
         }
 
-
-        //TODO: Check if we can do it asyncronously (no need to que the data, but no need to block the plugin thread)
 
         public string GetWinch(string uri)
         {
@@ -339,11 +358,18 @@ namespace MissionPlanner.RACPluginTensionerStat
 
         }
 
-        void btn_Click(Object sender, EventArgs e)
+        void btnReleaseServoOpen_Click(Object sender, EventArgs e)
         {
-            tension_value = 55;
+            DoOpenReleaseServo();
         }
 
+        void btnReleaseServoClose_Click(Object sender, EventArgs e)
+        {
+            DoCloseReleaseServo();
         }
+
+
+
     }
+}
 

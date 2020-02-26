@@ -38,7 +38,9 @@ namespace MissionPlanner.RACPluginTensionerStat
 
             nYellowLimit.Value = plugin.yellowLimit;
             nRedLimit.Value = plugin.redLimit;
-            
+
+            nAltLimit.Value = plugin.altLimit;
+
             cbDebugEnabled.Checked = plugin.bDebugEnabled;
         }
 
@@ -56,6 +58,7 @@ namespace MissionPlanner.RACPluginTensionerStat
             plugin.releaseServoOpen = (int)nServoOpen.Value;
             plugin.yellowLimit = (int)nYellowLimit.Value;
             plugin.redLimit = (int)nRedLimit.Value;
+            plugin.altLimit = (int)nAltLimit.Value;
 
 
             plugin.bDebugEnabled = cbDebugEnabled.Checked;
@@ -70,7 +73,9 @@ namespace MissionPlanner.RACPluginTensionerStat
             plugin.Host.config["TensionerReleaseServoOpen"] = plugin.releaseServoOpen.ToString();
             plugin.Host.config["TensionerYellowWarningLimit"] = plugin.yellowLimit.ToString();
             plugin.Host.config["TensionerRedWarningLimit"] = plugin.redLimit.ToString();
+            plugin.Host.config["TensionerAltLimit"] = plugin.altLimit.ToString();
             plugin.Host.config["TensionerDebug"] = plugin.bDebugEnabled.ToString();
+            plugin.Host.config.Save();
 
         }
     }
