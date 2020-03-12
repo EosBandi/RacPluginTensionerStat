@@ -224,7 +224,7 @@ namespace MissionPlanner.RACPluginTensionerStat
 
             string sTensionerInfo;
             sTensionerInfo = String.Format("At Drone:{0}N", tension_value.ToString("0.0"));
-            string urlReq = String.Format("{0}?dronefoce={1}&dronestatus={2}", urlTensionerAddress, tension_value.ToString("0"), dronestatus.ToString());
+            string urlReq = String.Format("{0}?droneforce={1}&dronestatus={2}", urlTensionerAddress, tension_value.ToString("0"), dronestatus.ToString());
 
             string retval = GetWinch(urlReq);
 
