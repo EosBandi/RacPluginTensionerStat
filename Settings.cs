@@ -42,6 +42,11 @@ namespace MissionPlanner.RACPluginTensionerStat
             nAltLimit.Value = plugin.altLimit;
 
             cbDebugEnabled.Checked = plugin.bDebugEnabled;
+
+            cbServoNumberLandGear.Text = plugin.landingGearServo.ToString();
+            nLGUpPWM.Value = plugin.landingGearServoUp;
+            nLGDownPWM.Value = plugin.landingGearServoDown;
+
         }
 
         private void Settings_FormClosing(object sender, FormClosingEventArgs e)
@@ -60,8 +65,14 @@ namespace MissionPlanner.RACPluginTensionerStat
             plugin.redLimit = (int)nRedLimit.Value;
             plugin.altLimit = (int)nAltLimit.Value;
 
-
             plugin.bDebugEnabled = cbDebugEnabled.Checked;
+
+            plugin.landingGearServo = System.Convert.ToInt32(cbServoNumberLandGear.Text);
+            plugin.landingGearServoDown = (int)nLGDownPWM.Value;
+            plugin.landingGearServoUp = (int)nLGUpPWM.Value;
+
+
+
 
             plugin.Host.config["TensionerURL"] = plugin.urlTensionerAddress;
             plugin.Host.config["TensionerWebTimeout"] = plugin.webTimeoutMs.ToString();
@@ -75,6 +86,11 @@ namespace MissionPlanner.RACPluginTensionerStat
             plugin.Host.config["TensionerRedWarningLimit"] = plugin.redLimit.ToString();
             plugin.Host.config["TensionerAltLimit"] = plugin.altLimit.ToString();
             plugin.Host.config["TensionerDebug"] = plugin.bDebugEnabled.ToString();
+
+            plugin.Host.config["TensionerLGServoNo"] = plugin.landingGearServo.ToString();
+            plugin.Host.config["TensionerLGServoUP"] = plugin.landingGearServoUp.ToString();
+            plugin.Host.config["TensionerLGServoDOWN"] = plugin.landingGearServoDown.ToString();
+
             plugin.Host.config.Save();
 
         }

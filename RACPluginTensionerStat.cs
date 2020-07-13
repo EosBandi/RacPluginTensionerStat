@@ -56,6 +56,13 @@ namespace MissionPlanner.RACPluginTensionerStat
         public int redLimit { get; set; }
         //Minimum altitude for tensioner activation
         public int altLimit {get; set;}
+        //Landing gear servo
+        public int landingGearServo { get; set; }
+        //Landing gear servo down PWM
+        public int landingGearServoDown { get; set; }
+        //landing gear servo up PWM
+        public int landingGearServoUp { get; set; }
+
 
         private static readonly ILog log =
             LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
@@ -68,6 +75,9 @@ namespace MissionPlanner.RACPluginTensionerStat
         Label lPullForce;
         MissionPlanner.Controls.MyButton btnReleaseServoOpen;
         MissionPlanner.Controls.MyButton btnReleaseServoClose;
+
+        MissionPlanner.Controls.MyButton btnLandingGearUp;
+        MissionPlanner.Controls.MyButton btnLandingGearDown;
 
         float tension_value;
 
@@ -158,6 +168,28 @@ namespace MissionPlanner.RACPluginTensionerStat
                 FDRightSide.Panel2.Controls.SetChildIndex(btnReleaseServoClose, 2);
                 btnReleaseServoClose.Click += new EventHandler(this.btnReleaseServoClose_Click);
 
+                btnLandingGearUp = new MissionPlanner.Controls.MyButton();
+                btnLandingGearUp.Location = new System.Drawing.Point(0, FDRightSide.Panel2.Height - 340);
+                btnLandingGearUp.Name = "btnLandingGearUp";
+                btnLandingGearUp.Text = "LG UP";
+                btnLandingGearUp.Anchor = (AnchorStyles.Bottom | AnchorStyles.Left);
+                FDRightSide.Panel2.Controls.Add(btnLandingGearUp);
+                FDRightSide.Panel2.Controls.SetChildIndex(btnLandingGearUp, 2);
+                btnLandingGearUp.Click += new EventHandler(this.BtnLandingGearUp_Click);
+
+                btnLandingGearDown = new MissionPlanner.Controls.MyButton();
+                btnLandingGearDown.Location = new System.Drawing.Point(0, FDRightSide.Panel2.Height - 300);
+                btnLandingGearDown.Name = "btnLandingGearDown";
+                btnLandingGearDown.Text = "LG DOWN";
+                btnLandingGearDown.Anchor = (AnchorStyles.Bottom | AnchorStyles.Left);
+                FDRightSide.Panel2.Controls.Add(btnLandingGearDown);
+                FDRightSide.Panel2.Controls.SetChildIndex(btnLandingGearDown, 2);
+                btnLandingGearDown.Click += new EventHandler(this.BtnLandingGearDown_Click);
+
+
+
+
+
             }));
 
             //Check settings and save back (in case there are no initial values in config.xml
@@ -197,9 +229,18 @@ namespace MissionPlanner.RACPluginTensionerStat
             bDebugEnabled = Host.config.GetBoolean("TensionerTensionerDebug", false);
             Host.config["TensionerTensionerDebug"] = bDebugEnabled.ToString();
 
+            landingGearServo = Host.config.GetInt32("TensionerLGServoNo", 9);
+            Host.config["TensionerLGServoNo"] = landingGearServo.ToString();
+
+            landingGearServoUp = Host.config.GetInt32("TensionerLGServoUP", 1900);
+            Host.config["TensionerLGServoUP"] = landingGearServoUp.ToString();
+
+            landingGearServoDown = Host.config.GetInt32("TensionerLGServoDOWN",1100);
+            Host.config["TensionerLGServoDOWN"] = landingGearServoDown.ToString();
+
+
             return true;
         }
-
 
         public override bool Loaded()
         {
@@ -286,14 +327,14 @@ namespace MissionPlanner.RACPluginTensionerStat
             if (!Host.cs.connected) return;
 
             Host.cs.messageHigh = "Cable Emergency Release!";
-            Host.cs.messageHighTime = DateTime.Now;
+            //Host.cs._messageHighTime = DateTime.Now;
 
             try
             {
                 if (!MainV2.comPort.doCommand((byte)MainV2.comPort.sysidcurrent, (byte)MainV2.comPort.compidcurrent, MAVLink.MAV_CMD.DO_SET_SERVO, releaseServo, releaseServoOpen, 0, 0, 0, 0, 0))
                 {
                     Host.cs.messageHigh = "Cable release servo not responding!";
-                    Host.cs.messageHighTime = DateTime.Now;
+                    //Host.cs.messageHighTime = DateTime.Now;
                 }
                 else
                 {
@@ -312,6 +353,15 @@ namespace MissionPlanner.RACPluginTensionerStat
             _HookStatus = false; //Hook is closed
         }
 
+        private void DoLandingGearUp()
+        {
+            _ = MainV2.comPort.doCommand((byte)MainV2.comPort.sysidcurrent, (byte)MainV2.comPort.compidcurrent, MAVLink.MAV_CMD.DO_SET_SERVO, landingGearServo, landingGearServoUp, 0, 0, 0, 0, 0);
+        }
+
+        private void DoLandingGearDown()
+        {
+            _ = MainV2.comPort.doCommand((byte)MainV2.comPort.sysidcurrent, (byte)MainV2.comPort.compidcurrent, MAVLink.MAV_CMD.DO_SET_SERVO, landingGearServo, landingGearServoDown, 0, 0, 0, 0, 0);
+        }
 
         private void MavOnOnPacketReceivedHandler(object o, MAVLink.MAVLinkMessage linkMessage)
         {
@@ -355,7 +405,6 @@ namespace MissionPlanner.RACPluginTensionerStat
                 settings.ShowDialog();
             }
 
-
         }
 
         void btnReleaseServoOpen_Click(Object sender, EventArgs e)
@@ -368,6 +417,16 @@ namespace MissionPlanner.RACPluginTensionerStat
             DoCloseReleaseServo();
         }
 
+
+        private void BtnLandingGearUp_Click(object sender, EventArgs e)
+        {
+            DoLandingGearUp();
+        }
+
+        private void BtnLandingGearDown_Click(object sender, EventArgs e)
+        {
+            DoLandingGearDown();
+        }
 
 
     }
